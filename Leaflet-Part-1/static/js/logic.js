@@ -11,16 +11,16 @@ d3.json(queryUrl).then(function (data) {
 });
 
 function markerSize(magnitude) {
-  return magnitude * 10;
+  return magnitude * 25000;
 };
 
 function chooseColor(depth) {
-  if (depth <= 2.5) return "white";
-  else if (depth <= 5.4) return "gray";
-  else if (depth <= 6) return "yellow";
-  else if (depth <= 6.9) return "orange";
-  else if (depth <= 7.9) return "red";
-  else return "black";
+  if (depth < 10) return "#D7FD63";
+  else if (depth < 30) return "#CFCA4F";
+  else if (depth < 50) return "#C7983B";
+  else if (depth < 70) return "#C06528";
+  else if (depth < 90) return "#B83314";
+  else return "#B00000";
 }
 
 function createFeatures(earthquakeData) { 
@@ -31,8 +31,19 @@ function createFeatures(earthquakeData) {
 
   // Save the earthquake data in a variable.
   let earthquakes = L.geoJSON(earthquakeData, {
-    onEachFeature: onEachFeature
-  })
+    onEachFeature: onEachFeature,
+    pointToLayer: function (feature,latlng) {
+      let markers = {
+        radius: markerSize(feature.properties.mag),
+        fillColor: chooseColor(feature.geometry.coordinates[2]),
+        fillOpacity: 0.8,
+        color: "black",
+        stroke: true,
+        weight:1
+      }
+      return L.circle(latlng,markers)
+    }
+  });
 
   // Pass the earthquake data to a createMap() function.
   createMap(earthquakes);
@@ -67,6 +78,34 @@ function createMap(earthquakes) {
       layers: [street,earthquakes]
     });
   
-  };
+    let colors = ["#D7FD63","#CFCA4F","#C7983B","#C06528","#B83314","#B00000"];
+    let limits = [0,10,30,50,70,90];
 
+      let legend = L.control({ position: "bottomright" });
+      legend.onAdd = function() {
+        let div = L.DomUtil.create("div", "legend");
+        let legendLimits = limits;
+        let legendColors = colors;
+        let labels = [];
+
+        // Title for the Legend
+        let legendInfo = "<h1>Depth of Earthquake</h1>" +
+        "<div class=\"labels\">" +
+          "<div class=\"min\">" + limits[0] + "</div>" +
+          "<div class=\"max\">" + limits[limits.length - 1] + "</div>" +
+        "</div>";
+
+        div.innerHTML = legendInfo;
   
+        limits.forEach(function(limit, index) {
+          labels.push("<li style=\"background-color: " + colors[index] + "\"></li>");
+        });
+
+        div.innerHTML += "<ul>" + labels.join("") + "</ul>";
+        return div;
+      };
+
+      // Adding the legend to the map
+      legend.addTo(earthquakes);
+
+};
